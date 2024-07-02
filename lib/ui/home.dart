@@ -56,27 +56,30 @@ class _HomePageState extends State<HomePage> {
             ),
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: CategoryHeading(title: "Top 10 Movies"),
+            ),
+            SizedBox(
+              height: 310,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 children: [
-                  Text(
-                    "Top 10 Movies",
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  _buildCard(Colors.green, "movie 1"),
+                  const SizedBox(
+                    width: 40,
                   ),
-                  Text(
-                    "See All",
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 18,
-                    ),
-                  )
+                  _buildCard(Colors.blue, "movie 2"),
+                  const SizedBox(
+                    width: 40,
+                  ),
+                  _buildCard(Colors.red, "movie 3"),
                 ],
               ),
-            )
+            ),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: CategoryHeading(title: "New Releases"),
+            ),
           ],
         ),
       ),
@@ -87,6 +90,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildCard(Color color, String text) {
     return Container(
+      width: 200,
       color: color,
       child: Center(
         child: Text(
@@ -94,6 +98,38 @@ class _HomePageState extends State<HomePage> {
           style: const TextStyle(color: Colors.white, fontSize: 24),
         ),
       ),
+    );
+  }
+}
+
+class CategoryHeading extends StatelessWidget {
+  final String title;
+  const CategoryHeading({
+    super.key,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.black54,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          "See All",
+          style: TextStyle(
+            color: Colors.red,
+            fontSize: 18,
+          ),
+        )
+      ],
     );
   }
 }
