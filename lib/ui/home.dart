@@ -1,6 +1,8 @@
 import 'package:carousel_slider/carousel_controller.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:movieapp/db/mysql_client.dart';
+import 'package:movieapp/db/mysql_init.dart';
 import 'package:movieapp/ui/bottom_navbar.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,11 +22,43 @@ class _HomePageState extends State<HomePage> {
   // //   _carouselController = CarouselController();
   // // }
 
+  final MySqlService _mySqlService = MySqlService();
+  String _statusMessage = 'Connecting to database...';
+
+  @override
+  void initState() {
+    // _connectAndQuery();
+    // connectSQL();
+    super.initState();
+  }
+
+  // Future<void> _connectAndQuery() async {
+  //   await _mySqlService.connect();
+  //   if (_mySqlService.connection != null) {
+  //     final results = await _mySqlService.query('SELECT * FROM test');
+  //     if (results != null && results.isNotEmpty) {
+  //       setState(() {
+  //         _statusMessage =
+  //             'Connected! Fetched ${results.length} rows from movies table.';
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _statusMessage = 'Connected, but no data found in movies table.';
+  //       });
+  //     }
+  //     await _mySqlService.close();
+  //   } else {
+  //     setState(() {
+  //       _statusMessage = 'Failed to connect to database.';
+  //     });
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home Page"),
+        title: Text(_statusMessage),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -80,11 +114,30 @@ class _HomePageState extends State<HomePage> {
               padding: EdgeInsets.all(16),
               child: CategoryHeading(title: "New Releases"),
             ),
+            SizedBox(
+              height: 310,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                children: [
+                  _buildCard(Colors.green, "movie 1"),
+                  const SizedBox(
+                    width: 40,
+                  ),
+                  _buildCard(Colors.blue, "movie 2"),
+                  const SizedBox(
+                    width: 40,
+                  ),
+                  _buildCard(Colors.red, "movie 3"),
+                ],
+              ),
+            ),
           ],
         ),
       ),
       bottomNavigationBar:
           const DefaultTabController(length: 3, child: BottomNavbar()),
+      floatingActionButton: FloatingActionButton(onPressed: () {}),
     );
   }
 
@@ -116,17 +169,20 @@ class CategoryHeading extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.black54,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          "See All",
-          style: TextStyle(
-            color: Colors.red,
-            fontSize: 18,
+        TextButton(
+          onPressed: () {},
+          child: const Text(
+            "See All",
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 18,
+            ),
           ),
         )
       ],
