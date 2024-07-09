@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:movieapp/db/mysql_init.dart';
 
 class BottomNavbar extends StatelessWidget {
-  const BottomNavbar({super.key});
+  final DatabaseService dbService;
+  const BottomNavbar({super.key, required this.dbService});
 
   @override
   Widget build(BuildContext context) {

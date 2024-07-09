@@ -1,51 +1,61 @@
-import 'package:mysql1/mysql1.dart';
-import 'dart:io';
 import 'package:mysql_client/mysql_client.dart';
 
-class MySqlService {
-  final String host = 'mymoviedb7411-moviedb10.h.aivencloud.com';
-  final int port = 28870;
-  final String user = 'avnadmin';
-  final String password = 'AVNS_ayQVGzUcYKAAquVgIxH';
-  final String db = 'defaultdb';
+class DatabaseService {
+  static final DatabaseService _instance = DatabaseService._internal();
+  late final MySQLConnection _conn;
 
-  MySqlConnection? connection;
+  factory DatabaseService() {
+    return _instance;
+  }
+
+  DatabaseService._internal();
 
   Future<void> connect() async {
+    print("Connecting to MySQL server...");
+
     try {
-      connection = await MySqlConnection.connect(
-        ConnectionSettings(
-          host: host,
-          port: port,
-          user: user,
-          password: password,
-          db: db,
-          useSSL: true,
-        ),
+      _conn = await MySQLConnection.createConnection(
+        host: "mymoviedb7411-moviedb10.h.aivencloud.com",
+        port: 28870,
+        userName: "avnadmin",
+        password: "AVNS_ayQVGzUcYKAAquVgIxH",
+        databaseName: "moviedb",
       );
-      print('Connected to Aiven for MySQL');
+
+      await _conn.connect();
+      print("Connected to MySQL server");
     } catch (e) {
-      print('Error connecting to Aiven for MySQL: $e');
+      print("Failed to connect to MySQL server: $e");
     }
   }
 
-  Future<void> close() async {
-    if (connection != null) {
-      await connection!.close();
-      print('Connection closed');
-    }
+  Future<void> disconnect() async {
+    await _conn.close();
+    print("Disconnected from MySQL server");
   }
 
-  Future<Results?> query(String sql, [List<dynamic>? values]) async {
-    if (connection == null) {
-      print('Not connected to the database');
-      return null;
+  Future<IResultSet> executeQuery(String query,
+      [Map<String, dynamic>? params]) async {
+    return await _conn.execute(query, params);
+  }
+}
+
+class MovieRepository {
+  final DatabaseService dbService;
+
+  MovieRepository(this.dbService);
+
+  Future<List<Map<String, dynamic>>> fetchMovies() async {
+    List<Map<String, dynamic>> movies = [];
+    await dbService.connect();
+    String query = "SELECT id, poster_url FROM movies";
+    var data = await dbService.executeQuery(query);
+
+    for (final row in data.rows) {
+      movies.add(row.assoc());
     }
-    try {
-      return await connection!.query(sql, values);
-    } catch (e) {
-      print('Error executing query: $e');
-      return null;
-    }
+
+    await dbService.disconnect();
+    return movies;
   }
 }

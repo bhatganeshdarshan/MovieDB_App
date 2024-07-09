@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:movieapp/ui/display_movies.dart';
+import 'package:movieapp/ui/movie_details.dart';
 
 class MyCarousel extends StatelessWidget {
   @override
@@ -9,6 +11,8 @@ class MyCarousel extends StatelessWidget {
         GestureDetector(
           onTap: () {
             print('First item clicked');
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const MovieDetails()));
           },
           child: Container(
             margin: const EdgeInsets.all(6.0),
@@ -25,6 +29,8 @@ class MyCarousel extends StatelessWidget {
         GestureDetector(
           onTap: () {
             print('Second item clicked');
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const MovieDetails()));
           },
           child: Container(
             margin: const EdgeInsets.all(6.0),

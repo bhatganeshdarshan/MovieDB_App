@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:movieapp/db/mysql_client.dart';
+import 'package:movieapp/db/mysql_init.dart';
 import 'package:movieapp/ui/home.dart';
 
-void main() {
-  runApp(const MyApp());
+final dbService = DatabaseService();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dbService.connect();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const HomePage(),
+      title: 'Movie App',
+      theme: ThemeData.dark(),
+      home: HomePage(dbService: dbService),
     );
   }
 }

@@ -1,60 +1,118 @@
-import 'package:carousel_slider/carousel_controller.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:movieapp/db/mysql_client.dart';
 import 'package:movieapp/db/mysql_init.dart';
 import 'package:movieapp/ui/bottom_navbar.dart';
-import 'package:movieapp/ui/custom_carousel.dart';
+import 'package:movieapp/ui/movie_details.dart';
 import 'package:movieapp/ui/display_movies.dart';
 
+class Movie {
+  final String? imageUrl;
+  final String? title;
+  final double? rating;
+
+  Movie({
+    required this.imageUrl,
+    required this.title,
+    required this.rating,
+  });
+}
+
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final DatabaseService dbService;
+  const HomePage({Key? key, required this.dbService}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // late CarouselController _carouselController;
-  // int _current = 0;
-
-  // @override
-  // void initState() {
-  // //   super.initState();
-  // //   _carouselController = CarouselController();
-  // // }
-
-  final MySqlService _mySqlService = MySqlService();
-  String _statusMessage = 'Connecting to database...';
+  List<Movie> topMovies = [];
+  List<Movie> newReleases = [];
+  List<Movie> searchResults = [];
+  bool isLoading = true;
+  bool isSearching = false;
+  String searchQuery = "";
 
   @override
   void initState() {
-    // _connectAndQuery();
-    // connectSQL();
     super.initState();
+    connectSQL();
   }
 
-  // Future<void> _connectAndQuery() async {
-  //   await _mySqlService.connect();
-  //   if (_mySqlService.connection != null) {
-  //     final results = await _mySqlService.query('SELECT * FROM test');
-  //     if (results != null && results.isNotEmpty) {
-  //       setState(() {
-  //         _statusMessage =
-  //             'Connected! Fetched ${results.length} rows from movies table.';
-  //       });
-  //     } else {
-  //       setState(() {
-  //         _statusMessage = 'Connected, but no data found in movies table.';
-  //       });
-  //     }
-  //     await _mySqlService.close();
-  //   } else {
-  //     setState(() {
-  //       _statusMessage = 'Failed to connect to database.';
-  //     });
-  //   }
-  // }
+  Future<void> connectSQL() async {
+    // Use the dbService passed down from main.dart
+    String topMoviesQuery =
+        "SELECT title, poster_url, rating FROM movies ORDER BY rating DESC LIMIT 10";
+    var topMoviesData = await widget.dbService.executeQuery(topMoviesQuery);
+    List<Movie> loadedTopMovies = [];
+    for (final row in topMoviesData.rows) {
+      loadedTopMovies.add(
+        Movie(
+          imageUrl: row.assoc()['poster_url'],
+          title: row.assoc()['title'],
+          rating: double.parse(row.assoc()['rating'].toString()),
+        ),
+      );
+    }
+
+    String newReleasesQuery =
+        "SELECT title, poster_url, rating FROM movies ORDER BY release_date DESC LIMIT 10";
+    var newReleasesData = await widget.dbService.executeQuery(newReleasesQuery);
+    List<Movie> loadedNewReleases = [];
+    for (final row in newReleasesData.rows) {
+      loadedNewReleases.add(
+        Movie(
+          imageUrl: row.assoc()['poster_url'],
+          title: row.assoc()['title'],
+          rating: double.parse(row.assoc()['rating'].toString()),
+        ),
+      );
+    }
+
+    setState(() {
+      topMovies = loadedTopMovies;
+      newReleases = loadedNewReleases;
+      isLoading = false;
+    });
+  }
+
+  Future<void> searchMovies(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        searchResults = [];
+        isSearching = false;
+      });
+      return;
+    }
+
+    String searchQuery =
+        "SELECT title, poster_url, rating FROM movies WHERE title LIKE '%$query%'";
+    var searchData = await widget.dbService.executeQuery(searchQuery);
+    List<Movie> results = [];
+    for (final row in searchData.rows) {
+      results.add(
+        Movie(
+          imageUrl: row.assoc()['poster_url'],
+          title: row.assoc()['title'],
+          rating: double.parse(row.assoc()['rating'].toString()),
+        ),
+      );
+    }
+    setState(() {
+      searchResults = results;
+      isSearching = true;
+    });
+  }
+
+  void _onMovieTap(BuildContext context, Movie movie) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MovieDetails()),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tapped on ${movie.title}')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,155 +122,141 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           elevation: 2,
           shadowColor: Colors.black45,
-          title: const SearchBar(),
+          title: SearchBar(
+            onSearch: searchMovies,
+          ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListView(
-            children: [
-              MyCarousel(),
-              // CarouselSlider(
-              //   items: [
-              //     Container(
-              //       margin: const EdgeInsets.all(6.0),
-              //       decoration: BoxDecoration(
-              //           borderRadius: BorderRadius.circular(8.0),
-              //           image: const DecorationImage(
-              //             image: NetworkImage(
-              //                 "https://images.unsplash.com/photo-1520342868574-5fa3804e551c?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=6ff92caffcdd63681a35134a6770ed3b&auto=format&fit=crop&w=1951&q=80"),
-              //             fit: BoxFit.cover,
-              //           )),
-              //     ),
-              //   ],
-              //   options: CarouselOptions(
-              //     height: 240.0,
-              //     enlargeCenterPage: true,
-              //     autoPlay: true,
-              //     aspectRatio: 16 / 9,
-              //     autoPlayCurve: Curves.fastOutSlowIn,
-              //     enableInfiniteScroll: true,
-              //     autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              //     viewportFraction: 0.8,
-              //   ),
-              // ),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: CategoryHeading(title: "Top 10 Movies"),
-              ),
-              SizedBox(
-                height: 310,
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
                 child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   children: [
-                    _buildCard(Colors.green, "movie 1", () {}),
-                    const SizedBox(
-                      width: 40,
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: CategoryHeading(
+                          title: "Top 10 Movies", dbService: widget.dbService),
                     ),
-                    _buildCard(Colors.blue, "movie 2", () {}),
-                    const SizedBox(
-                      width: 40,
+                    SizedBox(
+                      height: 310,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        itemCount: isSearching
+                            ? searchResults.length
+                            : topMovies.length,
+                        itemBuilder: (context, index) {
+                          final movie = isSearching
+                              ? searchResults[index]
+                              : topMovies[index];
+                          return GestureDetector(
+                            onTap: () => _onMovieTap(context, movie),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Card(
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 200,
+                                      height: 250,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                        image: DecorationImage(
+                                          image: NetworkImage(movie.imageUrl!),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8.0),
+                                    Text(
+                                      movie.title!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    _buildCard(Colors.red, "movie 3", () {}),
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CategoryHeading(
+                        title: "New Releases",
+                        dbService: widget.dbService,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 310,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        itemCount: isSearching
+                            ? searchResults.length
+                            : newReleases.length,
+                        itemBuilder: (context, index) {
+                          final movie = isSearching
+                              ? searchResults[index]
+                              : newReleases[index];
+                          return GestureDetector(
+                            onTap: () => _onMovieTap(context, movie),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Card(
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 200,
+                                      height: 250,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                        image: DecorationImage(
+                                          image: NetworkImage(movie.imageUrl!),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8.0),
+                                    Text(
+                                      movie.title!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: CategoryHeading(title: "New Releases"),
-              ),
-              SizedBox(
-                height: 310,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  children: [
-                    _buildCard(Colors.green, "movie 1", () {
-                      print("clicked m1");
-                    }),
-                    const SizedBox(
-                      width: 40,
-                    ),
-                    _buildCard(Colors.blue, "movie 2", () {
-                      print("clicked m2");
-                    }),
-                    const SizedBox(
-                      width: 40,
-                    ),
-                    _buildCard(Colors.red, "movie 3", () {
-                      print("clicked m3");
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar:
-            const DefaultTabController(length: 3, child: BottomNavbar()),
-        // floatingActionButton: FloatingActionButton(onPressed: () {}),
+        bottomNavigationBar: DefaultTabController(
+            length: 3, child: BottomNavbar(dbService: widget.dbService)),
       ),
-    );
-  }
-
-  Widget _buildCard(Color color, String text, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        color: color,
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.white, fontSize: 24),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CategoryHeading extends StatelessWidget {
-  final String title;
-  const CategoryHeading({
-    super.key,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            // print("clicked");
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const DisplayMovies()));
-          },
-          child: const Text(
-            "See All",
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 18,
-            ),
-          ),
-        )
-      ],
     );
   }
 }
 
 class SearchBar extends StatefulWidget {
-  const SearchBar({Key? key}) : super(key: key);
+  final void Function(String) onSearch;
+
+  const SearchBar({
+    Key? key,
+    required this.onSearch,
+  }) : super(key: key);
 
   @override
   State<SearchBar> createState() => _SearchBarState();
@@ -221,6 +265,7 @@ class SearchBar extends StatefulWidget {
 class _SearchBarState extends State<SearchBar>
     with SingleTickerProviderStateMixin {
   bool _isActive = false;
+  final TextEditingController _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -242,16 +287,18 @@ class _SearchBarState extends State<SearchBar>
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(4.0)),
                       child: TextField(
+                        controller: _controller,
                         decoration: InputDecoration(
                             hintText: 'Search for something',
                             prefixIcon: const Icon(Icons.search),
                             suffixIcon: IconButton(
                                 onPressed: () {
+                                  widget.onSearch(_controller.text);
                                   setState(() {
                                     _isActive = false;
                                   });
                                 },
-                                icon: const Icon(Icons.close))),
+                                icon: const Icon(Icons.search))),
                       ),
                     )
                   : IconButton(
@@ -261,6 +308,51 @@ class _SearchBarState extends State<SearchBar>
                         });
                       },
                       icon: const Icon(Icons.search)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CategoryHeading extends StatelessWidget {
+  final String title;
+  final DatabaseService dbService;
+  const CategoryHeading({
+    super.key,
+    required this.title,
+    required this.dbService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MovieList(
+                        dbService: dbService,
+                      )),
+            );
+          },
+          child: const Text(
+            "See All",
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 18,
             ),
           ),
         ),
