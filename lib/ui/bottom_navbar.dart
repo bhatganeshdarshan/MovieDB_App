@@ -6,7 +6,7 @@ class BottomNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: Color.fromARGB(255, 44, 43, 43),
       height: 70,
       child: const TabBar(
         tabs: [
@@ -15,8 +15,8 @@ class BottomNavbar extends StatelessWidget {
             text: "Home",
           ),
           Tab(
-            icon: Icon(Icons.search),
-            text: "Search",
+            icon: Icon(Icons.watch_later),
+            text: "Watchlist",
           ),
           Tab(
             icon: Icon(Icons.photo_library_outlined),
