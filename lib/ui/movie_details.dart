@@ -1,13 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:movieapp/db/mysql_init.dart';
+
+class Movie {
+  final String? imageUrl;
+  final String? title;
+  final double? rating;
+  final String? description;
+  final String? release_date;
+
+  Movie({
+    required this.description,
+    required this.release_date,
+    required this.imageUrl,
+    required this.title,
+    required this.rating,
+  });
+}
 
 class MovieDetails extends StatefulWidget {
-  const MovieDetails({super.key});
+  final DatabaseService dbService;
+  final String movieId;
+  const MovieDetails(
+      {super.key, required this.dbService, required this.movieId});
 
   @override
   State<MovieDetails> createState() => _MovieDetailsState();
 }
 
 class _MovieDetailsState extends State<MovieDetails> {
+  List<Movie> movies = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMovies();
+  }
+
+  Future<void> fetchMovies() async {
+    String query =
+        "SELECT id, title, poster_url, rating , description , release_date FROM movies where id =:id";
+    var data =
+        await widget.dbService.executeQuery(query, {"id": widget.movieId});
+
+    List<Movie> loadedMovies = [];
+    for (final row in data.rows) {
+      loadedMovies.add(
+        Movie(
+          imageUrl: row.assoc()['poster_url'],
+          title: row.assoc()['title'],
+          rating: double.parse(row.assoc()['rating'].toString()),
+          description: row.assoc()['description'],
+          release_date: row.assoc()['release_date'],
+        ),
+      );
+    }
+    setState(() {
+      movies = loadedMovies;
+      isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -24,13 +77,13 @@ class _MovieDetailsState extends State<MovieDetails> {
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   collapseMode: CollapseMode.parallax,
-                  title: const Text("Movie Name",
-                      style: TextStyle(
+                  title: Text(movies[0].title!,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16.0,
                       )),
                   background: Image.network(
-                    "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
+                    movies[0].imageUrl!,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -50,7 +103,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                         Icons.star,
                         color: Colors.amber[700],
                       ),
-                      const Text("7.7/10")
+                      Text(movies[0].rating!.toString())
                     ],
                   ),
                   TextButton.icon(
@@ -75,14 +128,9 @@ class _MovieDetailsState extends State<MovieDetails> {
                 ),
               ),
               const SizedBox(height: 8.0),
-              const Text(
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-                "Vivamus lacinia odio vitae vestibulum vestibulum. "
-                "Cras venenatis euismod malesuada. Nullam in urna vitae "
-                "arcu vestibulum scelerisque. Donec auctor, justo quis "
-                "accumsan porta, enim nisi facilisis risus, eget luctus "
-                "nisi justo nec nunc.",
-                style: TextStyle(fontSize: 16.0),
+              Text(
+                movies[0].description!,
+                style: const TextStyle(fontSize: 16.0),
               ),
               const SizedBox(height: 16.0),
               const Text(

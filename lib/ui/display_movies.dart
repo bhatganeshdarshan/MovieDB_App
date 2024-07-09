@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:movieapp/db/mysql_client.dart';
 import 'package:movieapp/db/mysql_init.dart';
+import 'package:movieapp/main.dart';
 import 'package:movieapp/ui/movie_details.dart';
 import 'package:movieapp/ui/home.dart';
 
 class Movie {
+  final String? movieId;
   final String? imageUrl;
   final String? title;
   final double? rating;
 
   Movie({
+    required this.movieId,
     required this.imageUrl,
     required this.title,
     required this.rating,
@@ -43,6 +46,7 @@ class _MovieListState extends State<MovieList> {
     for (final row in data.rows) {
       loadedMovies.add(
         Movie(
+          movieId: row.assoc()['id'],
           imageUrl: row.assoc()['poster_url'],
           title: row.assoc()['title'],
           rating: double.parse(row.assoc()['rating'].toString()),
@@ -58,7 +62,11 @@ class _MovieListState extends State<MovieList> {
   void _onMovieTap(BuildContext context, Movie movie) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const MovieDetails()),
+      MaterialPageRoute(
+          builder: (context) => MovieDetails(
+                dbService: dbService,
+                movieId: movie.movieId!,
+              )),
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Tapped on ${movie.title}')),

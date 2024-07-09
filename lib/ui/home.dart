@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:movieapp/db/mysql_client.dart';
 import 'package:movieapp/db/mysql_init.dart';
+import 'package:movieapp/main.dart';
 import 'package:movieapp/ui/bottom_navbar.dart';
 import 'package:movieapp/ui/movie_details.dart';
 import 'package:movieapp/ui/display_movies.dart';
 
 class Movie {
+  final String? movieId;
   final String? imageUrl;
   final String? title;
   final double? rating;
 
   Movie({
+    required this.movieId,
     required this.imageUrl,
     required this.title,
     required this.rating,
@@ -40,14 +43,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> connectSQL() async {
-    // Use the dbService passed down from main.dart
     String topMoviesQuery =
-        "SELECT title, poster_url, rating FROM movies ORDER BY rating DESC LIMIT 10";
+        "SELECT id,title, poster_url, rating FROM movies ORDER BY rating DESC LIMIT 10";
     var topMoviesData = await widget.dbService.executeQuery(topMoviesQuery);
     List<Movie> loadedTopMovies = [];
     for (final row in topMoviesData.rows) {
       loadedTopMovies.add(
         Movie(
+          movieId: row.assoc()['id'].toString(),
           imageUrl: row.assoc()['poster_url'],
           title: row.assoc()['title'],
           rating: double.parse(row.assoc()['rating'].toString()),
@@ -56,12 +59,13 @@ class _HomePageState extends State<HomePage> {
     }
 
     String newReleasesQuery =
-        "SELECT title, poster_url, rating FROM movies ORDER BY release_date DESC LIMIT 10";
+        "SELECT id,title, poster_url, rating FROM movies ORDER BY release_date DESC LIMIT 10";
     var newReleasesData = await widget.dbService.executeQuery(newReleasesQuery);
     List<Movie> loadedNewReleases = [];
     for (final row in newReleasesData.rows) {
       loadedNewReleases.add(
         Movie(
+          movieId: row.assoc()['id'].toString(),
           imageUrl: row.assoc()['poster_url'],
           title: row.assoc()['title'],
           rating: double.parse(row.assoc()['rating'].toString()),
@@ -86,12 +90,13 @@ class _HomePageState extends State<HomePage> {
     }
 
     String searchQuery =
-        "SELECT title, poster_url, rating FROM movies WHERE title LIKE '%$query%'";
+        "SELECT id,title, poster_url, rating FROM movies WHERE title LIKE '%$query%'";
     var searchData = await widget.dbService.executeQuery(searchQuery);
     List<Movie> results = [];
     for (final row in searchData.rows) {
       results.add(
         Movie(
+          movieId: row.assoc()['id'].toString(),
           imageUrl: row.assoc()['poster_url'],
           title: row.assoc()['title'],
           rating: double.parse(row.assoc()['rating'].toString()),
@@ -107,7 +112,11 @@ class _HomePageState extends State<HomePage> {
   void _onMovieTap(BuildContext context, Movie movie) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const MovieDetails()),
+      MaterialPageRoute(
+          builder: (context) => MovieDetails(
+                dbService: dbService,
+                movieId: movie.movieId!,
+              )),
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Tapped on ${movie.title}')),
@@ -186,7 +195,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: CategoryHeading(
                         title: "New Releases",
                         dbService: widget.dbService,
