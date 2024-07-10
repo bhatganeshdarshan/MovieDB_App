@@ -18,17 +18,17 @@ class BottomNavbar extends StatelessWidget {
           icon: Icon(Icons.home),
           label: 'Home',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.new_releases),
-          label: 'New Releases',
-        ),
+        // BottomNavigationBarItem(
+        //   icon: Icon(Icons.new_releases),
+        //   label: 'New Releases',
+        // ),
         BottomNavigationBarItem(
           icon: Icon(Icons.bookmark),
           label: 'Watchlist',
         ),
       ],
       onTap: (index) {
-        if (index == 2) {
+        if (index == 1) {
           Navigator.push(
             context,
             MaterialPageRoute(

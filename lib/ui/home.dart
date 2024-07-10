@@ -122,9 +122,9 @@ class _HomePageState extends State<HomePage> {
                 userIdentifier: "user123",
               )),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tapped on ${movie.title}')),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text('Tapped on ${movie.title}')),
+    // );
   }
 
   @override
@@ -273,7 +273,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
         bottomNavigationBar: DefaultTabController(
-            length: 3,
+            length: 2,
             child: BottomNavbar(
               dbService: widget.dbService,
               userIdentifier: widget.userIdentifier,
