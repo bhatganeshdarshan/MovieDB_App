@@ -17,7 +17,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Movie App',
       theme: ThemeData.dark(),
-      home: HomePage(dbService: dbService),
+      home: HomePage(
+        dbService: dbService,
+        userIdentifier: "user123",
+      ),
     );
   }
 }

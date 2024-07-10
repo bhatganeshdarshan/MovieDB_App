@@ -1,3 +1,4 @@
+import 'package:movieapp/ui/display_movies.dart';
 import 'package:mysql_client/mysql_client.dart';
 
 class DatabaseService {
@@ -37,6 +38,54 @@ class DatabaseService {
   Future<IResultSet> executeQuery(String query,
       [Map<String, dynamic>? params]) async {
     return await _conn.execute(query, params);
+  }
+
+  Future<List<Movie>> fetchWatchlist(String userIdentifier) async {
+    String query = """
+      SELECT m.id, m.title, m.poster_url, m.rating 
+      FROM watchlist w 
+      JOIN movies m ON w.movie_id = m.id 
+      WHERE w.user_identifier = :userIdentifier 
+      ORDER BY w.added_date DESC
+    """;
+
+    var data = await executeQuery(query, {"userIdentifier": userIdentifier});
+    List<Movie> watchlistMovies = [];
+
+    for (final row in data.rows) {
+      watchlistMovies.add(
+        Movie(
+          movieId: row.assoc()['id'].toString(),
+          imageUrl: row.assoc()['poster_url'],
+          title: row.assoc()['title'],
+          rating: double.parse(row.assoc()['rating'].toString()),
+        ),
+      );
+    }
+
+    return watchlistMovies;
+  }
+
+  Future<void> addToWatchlist(String userIdentifier, int movieId) async {
+    String query = """
+      INSERT INTO watchlist (user_identifier, movie_id) 
+      VALUES (:userIdentifier, :movieId)
+    """;
+    await executeQuery(query, {
+      "userIdentifier": userIdentifier,
+      "movieId": movieId,
+    });
+  }
+
+  Future<void> removeFromWatchlist(String userIdentifier, int movieId) async {
+    String query = """
+      DELETE FROM watchlist 
+      WHERE user_identifier = :userIdentifier AND movie_id = :movieId
+    """;
+    await executeQuery(query, {
+      "userIdentifier": userIdentifier,
+      "movieId": movieId,
+    });
   }
 }
 

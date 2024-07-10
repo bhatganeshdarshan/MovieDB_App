@@ -66,6 +66,7 @@ class _MovieListState extends State<MovieList> {
           builder: (context) => MovieDetails(
                 dbService: dbService,
                 movieId: movie.movieId!,
+                userIdentifier: "user123",
               )),
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +86,10 @@ class _MovieListState extends State<MovieList> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => HomePage(dbService: widget.dbService),
+                  builder: (context) => HomePage(
+                    dbService: widget.dbService,
+                    userIdentifier: "user123",
+                  ),
                 ),
               );
             },

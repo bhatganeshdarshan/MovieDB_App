@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:movieapp/db/mysql_client.dart';
 import 'package:movieapp/db/mysql_init.dart';
 import 'package:movieapp/main.dart';
 import 'package:movieapp/ui/bottom_navbar.dart';
 import 'package:movieapp/ui/movie_details.dart';
 import 'package:movieapp/ui/display_movies.dart';
+import 'package:movieapp/ui/watchlist.dart';
 
 class Movie {
   final String? movieId;
@@ -22,7 +22,10 @@ class Movie {
 
 class HomePage extends StatefulWidget {
   final DatabaseService dbService;
-  const HomePage({Key? key, required this.dbService}) : super(key: key);
+  final String userIdentifier;
+  const HomePage(
+      {Key? key, required this.dbService, required this.userIdentifier})
+      : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -116,6 +119,7 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => MovieDetails(
                 dbService: dbService,
                 movieId: movie.movieId!,
+                userIdentifier: "user123",
               )),
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -134,6 +138,22 @@ class _HomePageState extends State<HomePage> {
           title: SearchBar(
             onSearch: searchMovies,
           ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.bookmark),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WatchlistPage(
+                      dbService: widget.dbService,
+                      userIdentifier: widget.userIdentifier,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         body: isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -253,7 +273,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
         bottomNavigationBar: DefaultTabController(
-            length: 3, child: BottomNavbar(dbService: widget.dbService)),
+            length: 3,
+            child: BottomNavbar(
+              dbService: widget.dbService,
+              userIdentifier: widget.userIdentifier,
+            )),
       ),
     );
   }

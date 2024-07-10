@@ -17,6 +17,27 @@ class Movie {
   });
 }
 
+class Director {
+  final String? name;
+  Director({
+    required this.name,
+  });
+}
+
+class Language {
+  final String? name;
+  Language({
+    required this.name,
+  });
+}
+
+class Genre {
+  final String? name;
+  Genre({
+    required this.name,
+  });
+}
+
 class Actors {
   final String? actor;
   Actors({
@@ -27,8 +48,14 @@ class Actors {
 class MovieDetails extends StatefulWidget {
   final DatabaseService dbService;
   final String movieId;
-  const MovieDetails(
-      {super.key, required this.dbService, required this.movieId});
+  final String userIdentifier; // Add userIdentifier to constructor
+
+  const MovieDetails({
+    super.key,
+    required this.dbService,
+    required this.movieId,
+    required this.userIdentifier,
+  }); // Include userIdentifier here
 
   @override
   State<MovieDetails> createState() => _MovieDetailsState();
@@ -37,7 +64,11 @@ class MovieDetails extends StatefulWidget {
 class _MovieDetailsState extends State<MovieDetails> {
   List<Movie> movies = [];
   List<Actors> actors = [];
+  List<Director> directors = [];
+  List<Language> languages = [];
+  List<Genre> genres = [];
   bool isLoading = true;
+  bool isInWatchlist = false;
 
   @override
   void initState() {
@@ -46,19 +77,35 @@ class _MovieDetailsState extends State<MovieDetails> {
   }
 
   Future<void> fetchMovies() async {
-    String actQuery =
-        "SELECT a.id, a.name FROM actors a JOIN movie_actors ma ON a.id = ma.actor_id WHERE ma.movie_id = :id";
-    String query =
+    String movieQuery =
         "SELECT id, title, poster_url, rating, description, release_date FROM movies WHERE id = :id";
-    var data =
-        await widget.dbService.executeQuery(query, {"id": widget.movieId});
+    String actorsQuery =
+        "SELECT a.name FROM actors a JOIN movie_actors ma ON a.id = ma.actor_id WHERE ma.movie_id = :id";
+    String directorsQuery =
+        "SELECT d.name FROM directors d JOIN movie_directors md ON d.id = md.director_id WHERE md.movie_id = :id";
+    String languagesQuery =
+        "SELECT l.name FROM languages l JOIN movie_lang ml ON l.id = ml.lang_id WHERE ml.movie_id = :id";
+    String genresQuery =
+        "SELECT g.name FROM genres g JOIN movie_genre mg ON g.id = mg.genre_id WHERE mg.movie_id = :id";
 
-    var act =
-        await widget.dbService.executeQuery(actQuery, {"id": widget.movieId});
+    var movieData =
+        await widget.dbService.executeQuery(movieQuery, {"id": widget.movieId});
+    var actorsData = await widget.dbService
+        .executeQuery(actorsQuery, {"id": widget.movieId});
+    var directorsData = await widget.dbService
+        .executeQuery(directorsQuery, {"id": widget.movieId});
+    var languagesData = await widget.dbService
+        .executeQuery(languagesQuery, {"id": widget.movieId});
+    var genresData = await widget.dbService
+        .executeQuery(genresQuery, {"id": widget.movieId});
 
     List<Movie> loadedMovies = [];
     List<Actors> loadedActors = [];
-    for (final row in data.rows) {
+    List<Director> loadedDirectors = [];
+    List<Language> loadedLanguages = [];
+    List<Genre> loadedGenres = [];
+
+    for (final row in movieData.rows) {
       loadedMovies.add(
         Movie(
           imageUrl: row.assoc()['poster_url'],
@@ -69,16 +116,90 @@ class _MovieDetailsState extends State<MovieDetails> {
         ),
       );
     }
-    for (final row in act.rows) {
-      loadedActors.add(
-        Actors(actor: row.assoc()['name']),
-      );
+    for (final row in actorsData.rows) {
+      loadedActors.add(Actors(actor: row.assoc()['name']));
+    }
+    for (final row in directorsData.rows) {
+      loadedDirectors.add(Director(name: row.assoc()['name']));
+    }
+    for (final row in languagesData.rows) {
+      loadedLanguages.add(Language(name: row.assoc()['name']));
+    }
+    for (final row in genresData.rows) {
+      loadedGenres.add(Genre(name: row.assoc()['name']));
     }
 
     setState(() {
-      actors = loadedActors;
       movies = loadedMovies;
+      actors = loadedActors;
+      directors = loadedDirectors;
+      languages = loadedLanguages;
+      genres = loadedGenres;
       isLoading = false;
+    });
+
+    await checkWatchlistStatus();
+  }
+
+  Future<void> checkWatchlistStatus() async {
+    String query = '''
+    SELECT COUNT(*) AS count FROM watchlist 
+    WHERE user_identifier = :user_identifier AND movie_id = :movie_id
+  ''';
+
+    var result = await widget.dbService.executeQuery(query, {
+      "user_identifier": widget.userIdentifier,
+      "movie_id": widget.movieId,
+    });
+    if (result.rows.isNotEmpty) {
+      String? count = result.rows.first.assoc()['count'];
+      setState(() {
+        isInWatchlist = (count != null && count != "0") ? true : false;
+      });
+    } else {
+      setState(() {
+        isInWatchlist = false;
+      });
+    }
+  }
+
+  Future<void> addToWatchlist() async {
+    String query = '''
+      INSERT INTO watchlist (user_identifier, movie_id, added_date)
+      VALUES (:user_identifier, :movie_id, NOW())
+    ''';
+
+    await widget.dbService.executeQuery(query, {
+      "user_identifier": widget.userIdentifier,
+      "movie_id": widget.movieId,
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Added to Watchlist')),
+    );
+
+    setState(() {
+      isInWatchlist = true;
+    });
+  }
+
+  Future<void> removeFromWatchlist() async {
+    String query = '''
+      DELETE FROM watchlist 
+      WHERE user_identifier = :user_identifier AND movie_id = :movie_id
+    ''';
+
+    await widget.dbService.executeQuery(query, {
+      "user_identifier": widget.userIdentifier,
+      "movie_id": widget.movieId,
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Removed from Watchlist')),
+    );
+
+    setState(() {
+      isInWatchlist = false;
     });
   }
 
@@ -101,15 +222,17 @@ class _MovieDetailsState extends State<MovieDetails> {
                       flexibleSpace: FlexibleSpaceBar(
                         centerTitle: true,
                         collapseMode: CollapseMode.parallax,
-                        title: Text(movies[0].title!,
+                        title: Text(movies.isNotEmpty ? movies[0].title! : '',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16.0,
                             )),
-                        background: Image.network(
-                          movies[0].imageUrl!,
-                          fit: BoxFit.cover,
-                        ),
+                        background: movies.isNotEmpty
+                            ? Image.network(
+                                movies[0].imageUrl!,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(),
                       ),
                     ),
                   ];
@@ -127,17 +250,27 @@ class _MovieDetailsState extends State<MovieDetails> {
                               Icons.star,
                               color: Colors.amber[700],
                             ),
-                            Text(movies[0].rating!.toString())
+                            Text(movies.isNotEmpty
+                                ? movies[0].rating!.toString()
+                                : '')
                           ],
                         ),
                         TextButton.icon(
                           onPressed: () {
-                            print('Add to Watchlist clicked');
+                            if (isInWatchlist) {
+                              removeFromWatchlist();
+                            } else {
+                              addToWatchlist();
+                            }
                           },
-                          label: const Text("Add to Watchlist",
-                              style: TextStyle(color: Colors.blue)),
-                          icon: const Icon(
-                            Icons.add,
+                          label: Text(
+                            isInWatchlist
+                                ? "Remove from Watchlist"
+                                : "Add to Watchlist",
+                            style: const TextStyle(color: Colors.blue),
+                          ),
+                          icon: Icon(
+                            isInWatchlist ? Icons.remove : Icons.add,
                             color: Colors.blue,
                           ),
                         ),
@@ -153,7 +286,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                     ),
                     const SizedBox(height: 8.0),
                     Text(
-                      movies[0].description!,
+                      movies.isNotEmpty ? movies[0].description! : '',
                       style: const TextStyle(fontSize: 16.0),
                     ),
                     const SizedBox(height: 16.0),
@@ -167,6 +300,45 @@ class _MovieDetailsState extends State<MovieDetails> {
                     const SizedBox(height: 8.0),
                     ...actors.map((actor) => Text(
                           actor.actor!,
+                          style: const TextStyle(fontSize: 16.0),
+                        )),
+                    const SizedBox(height: 16.0),
+                    const Text(
+                      "Directors",
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    ...directors.map((director) => Text(
+                          director.name!,
+                          style: const TextStyle(fontSize: 16.0),
+                        )),
+                    const SizedBox(height: 16.0),
+                    const Text(
+                      "Languages",
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    ...languages.map((language) => Text(
+                          language.name!,
+                          style: const TextStyle(fontSize: 16.0),
+                        )),
+                    const SizedBox(height: 16.0),
+                    const Text(
+                      "Genres",
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    ...genres.map((genre) => Text(
+                          genre.name!,
                           style: const TextStyle(fontSize: 16.0),
                         )),
                   ],
