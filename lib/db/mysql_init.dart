@@ -16,11 +16,11 @@ class DatabaseService {
 
     try {
       _conn = await MySQLConnection.createConnection(
-        host: "mymoviedb7411-moviedb10.h.aivencloud.com",
-        port: 28870,
-        userName: "avnadmin",
-        password: "AVNS_ayQVGzUcYKAAquVgIxH",
-        databaseName: "moviedb",
+        host: HOST_NAME,
+        port: PORT,
+        userName: UNAME,
+        password: PWD,
+        databaseName: DBNAME,
       );
 
       await _conn.connect();
