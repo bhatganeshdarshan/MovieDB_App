@@ -5,11 +5,11 @@ Future<void> connectSQL() async {
 
   // create connection
   final conn = await MySQLConnection.createConnection(
-    host: "mymoviedb7411-moviedb10.h.aivencloud.com",
-    port: 28870,
-    userName: "ganeshdarshan",
-    password: "AVNS_WxU-OSNzOq2EV4JCx5y",
-    databaseName: "defaultdb",
+    host: HOST_URL,
+    port: PORT,
+    userName: UNAME,
+    password: PWD,
+    databaseName: DBNAME,
     secure: true,
   );
 
